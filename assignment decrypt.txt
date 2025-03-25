@@ -1,0 +1,127 @@
+<html>
+   <head><link rel="stylesheet" href="111.css">
+<body><div><iframe src="https://trinket.io/embed/python/bb45343cf673" width="100%" height="356" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen></iframe></div>
+</body>
+</html>
+
+div {
+    padding-top: 50px;
+    padding-right: 50px;
+    padding-bottom: 50px;
+    padding-left: 80px;
+  }
+
+import random
+import string
+
+# Characters for encryption
+chars = " " + string.punctuation + string.digits + string.ascii_letters
+chars = list(chars)
+key = chars[:]
+
+# Shuffle the key using a fixed seed for consistency
+random.seed(42)
+random.shuffle(key)
+
+def adjust_message_length(message, length=8):
+    """ Adjust message length by padding or trimming. """
+    if len(message) < length:
+        return message.ljust(length)
+    return message[:length]
+
+# ✅ 64-bit Base64 Encoding (Fixed)
+def to_base64_64bit(text):
+    """ Manually encode text to Base64 format using 64-bit chunks. """
+    base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+    # Convert text to 64-bit binary representation
+    binary = ''.join(['{:064b}'.format(ord(char)) for char in text])
+
+    # Pad binary to be a multiple of 6 bits
+    while len(binary) % 6 != 0:
+        binary += '0'
+
+    base64_encoded = ""
+    
+    # Convert binary to Base64
+    for i in range(0, len(binary), 6):
+        chunk = binary[i:i + 6]
+        
+        # Ensure the chunk is valid before processing
+        if len(chunk) == 6 and all(bit in "01" for bit in chunk):
+            index = int(chunk, 2)
+            base64_encoded += base64_chars[index]
+
+    # Add padding
+    while len(base64_encoded) % 4 != 0:
+        base64_encoded += "="
+
+    return base64_encoded
+
+# ✅ 64-bit Base64 Decoding (Fixed)
+def from_base64_64bit(base64_text):
+    """ Manually decode 64-bit Base64 string back to original text. """
+    base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+    # Remove padding
+    base64_text = base64_text.rstrip("=")
+
+    binary = ""
+    for char in base64_text:
+        if char in base64_chars:
+            binary += '{:06b}'.format(base64_chars.index(char))
+
+    decoded_text = ""
+    
+    # Read in 64-bit chunks and decode
+    for i in range(0, len(binary), 64):
+        byte = binary[i:i + 64]
+        
+        # Validate binary chunk length
+        if len(byte) == 64:
+            try:
+                decoded_text += chr(int(byte, 2))
+            except ValueError:
+                print("Invalid binary chunk:", byte)  # For debugging
+
+    return decoded_text
+
+# ✅ Encryption
+plain_text = input("Enter a message to encrypt: ")
+
+cipher_text = ""
+for letter in plain_text:
+    if letter in chars:
+        index = chars.index(letter)
+        cipher_text += key[index]
+    else:
+        cipher_text += letter  # Keep unknown characters as is
+
+# ✅ Decryption function
+def decrypt_message(cipher_text):
+    """ Decrypt the message using the shuffled key. """
+    plain_text = ""
+    for letter in cipher_text:
+        if letter in key:
+            index = key.index(letter)
+            plain_text += chars[index]
+        else:
+            plain_text += letter  # Handle unknown characters
+    return plain_text
+
+# ✅ Display results using `.format()` for compatibility
+print("Original message: {}".format(plain_text))
+print("Encrypted message: {}".format(cipher_text))
+
+# 64-bit Base64 Encoding
+base64_encrypted = to_base64_64bit(cipher_text)
+print("64-bit Base64 Encrypted message: {}".format(base64_encrypted))
+
+# 64-bit Base64 Decryption
+base64_cipher_text_input = input("Enter a 64-bit Base64 encrypted message to decrypt: ")
+
+# Decode and decrypt
+decoded_cipher_text = from_base64_64bit(base64_cipher_text_input)
+plain_text_decrypted = decrypt_message(decoded_cipher_text)
+
+print("Decrypted original message: {}".format(plain_text_decrypted))
